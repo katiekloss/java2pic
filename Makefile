@@ -1,23 +1,14 @@
 #-----------------------------------------------------------------------------
 #	Makefile
 #	EECS 337 Compilers Fall 2011
-#	by caseid
+#	by ajk108
 #
 # REVISION HISTORY
 #
+# ajk108: Updated to work properly on FreeBSD
+#
 #-----------------------------------------------------------------------------
-.KEEP_STATE:
-SHELL=/bin/bash
 
-#
-#	define version of c compiler, linker and lex
-#
-CC=	gcc
-LINK=	gcc
-LEX=	flex
-#
-#	define yacc lex and compiler flags
-#
 YFLAGS	= -dv
 LFLAGS	=
 CFLAGS	= -g
@@ -25,13 +16,12 @@ CFLAGS	= -g
 SRC	= java11.y java.l main.c
 OBJ	= java11.o java.o main.o
 
-ansi_c :	$(OBJ)
-	$(LINK) $(CFLAGS) $(OBJ) -o java2pic
+java2pic :	$(OBJ)
 
 java.o	: y.tab.h
 
 clean	:
-	rm -f java.c java11.c y.tab.h y.output *.o
+	rm -f java.c java11.c y.tab.h y.output *.o java2pic
 
 fromtar	:
 	tar xvf project_caseid.tar 
