@@ -13,8 +13,7 @@
 *******************************************************************************/
 
 public class Code_1_6_2 {
-	//public static void main(String[] args)
-    public static void main()
+	public static void main(String[] args)
 	{
 		int w, x, y, z;
 		int i = 3;
@@ -35,6 +34,6 @@ public class Code_1_6_2 {
 
 		z = i + j;
 
-//		System.out.println("w:" + w + ",\tx:" + x + ",\ty:" + y + ",\tz:" + z);
+		System.out.println("w:" + w + ",\tx:" + x + ",\ty:" + y + ",\tz:" + z);
 	}
 }

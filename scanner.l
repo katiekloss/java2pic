@@ -13,7 +13,7 @@ Whitespace  [ \t\r\n]
 Digit   [0-9]
 Number  {Digit}+
 Letter  [a-zA-Z_.]
-StringLiteral \"[^\\"]\"
+StringLiteral \"[^\"]+\"
 
 Identifier  {Letter}({Letter}|{Digit})*
 %%
@@ -28,10 +28,9 @@ Identifier  {Letter}({Letter}|{Digit})*
 "void"      { return VOID; }
 "public"    { return PUBLIC; }
 "static"    { return STATIC; }
-{Identifier}    { printf("\n\nIdentifier: %s\n\n", yytext); return IDENTIFIER; }
-{Number}    { return CONSTANT; }
+"String[]"  { return STRINGARRAY; }
 {StringLiteral} { return STRING; }
+{Identifier}    { return IDENTIFIER; }
+{Number}    { return CONSTANT; }
 {Comment}       {}
 {Whitespace}    {}
-
-

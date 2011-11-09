@@ -9,7 +9,7 @@
 %token IDENTIFIER INT
 %token MULTIPLY
 %token PUBLIC
-%token STATIC STRING SUBTRACT
+%token STATIC STRING STRINGARRAY SUBTRACT
 %token VOID
 %start Program
 
@@ -58,7 +58,7 @@ FunctionCallParameters : FunctionCallParameters FunctionCallParameter
 
 FunctionCallParameter : IDENTIFIER
                       | CONSTANT
-                      | STRING
+                      | String
                       ;
 
 Operator    : ADD
@@ -69,6 +69,12 @@ Operator    : ADD
 
 TypeName    : INT
             | VOID
+            | STRINGARRAY
+            ;
+
+String      : String ADD STRING
+            | String ADD IDENTIFIER
+            | STRING
             ;
 
 Functions : Functions Function
