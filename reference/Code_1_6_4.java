@@ -19,16 +19,17 @@ public class Code_1_6_4 {
 	public static void b()
 	{
 		x = x + 1;
-		System.out.println(x);
+//		System.out.println(x);
 	}
 
 	public static void c()
 	{
 		int x = 1;
-		System.out.println(x + 1);
+//		System.out.println(x + 1);
 	}
 
-	public static void main(String[] args)
+//	public static void main(String[] args)
+    public static void main()
 	{
 		b();
 		c();
