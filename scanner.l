@@ -30,7 +30,7 @@ Identifier  {Letter}({Letter}|{Digit})*
 "static"    { return STATIC; }
 "String[]"  { return STRINGARRAY; }
 {StringLiteral} { return STRING; }
-{Identifier}    { return IDENTIFIER; }
-{Number}    { return CONSTANT; }
+{Identifier}    { yylval = (char *)malloc(strlen(yytext)); strcpy(yylval, yytext); return IDENTIFIER; }
+{Number}    { yylval = atoi(yytext); return CONSTANT; }
 {Comment}       {}
 {Whitespace}    {}

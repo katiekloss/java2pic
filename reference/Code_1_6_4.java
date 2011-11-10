@@ -29,7 +29,6 @@ public class Code_1_6_4 {
 	}
 
 	public static void main(String[] args)
-    public static void main()
 	{
 		b();
 		c();

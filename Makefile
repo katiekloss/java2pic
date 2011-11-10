@@ -3,7 +3,7 @@ YACC = bison
 YFLAGS = -dvy
 CFLAGS = -g
 
-SRC = grammar.y scanner.l main.c list.c
+SRC = grammar.y scanner.l main.c list.c 
 OBJ = grammar.o scanner.o main.o list.o
 
 java2pic : $(OBJ)

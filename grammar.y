@@ -33,6 +33,9 @@ Declaration : Declaration ';'
 
 Assignment  : TypeName IDENTIFIER '=' Expression ';'
             | TypeName IDENTIFIER '=' CONSTANT ';'
+            {
+                printf("Created new variable \"%s\" with value %i\n", $2, $4);
+            }
             | IDENTIFIER '=' Expression ';'
             | IDENTIFIER '=' CONSTANT ';'
             ;
