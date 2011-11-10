@@ -11,6 +11,7 @@ int main()
     assert(list->data == NULL);
     assert(list->next == NULL);
 
+    int w = 42;
     int x = 1;
     int y = 2;
     int z = 3;
@@ -29,6 +30,11 @@ int main()
 
     assert(list->next->next->next->data == NULL);
     assert(list->next->next->next->next == NULL);
+
+
+    list = (List *)prepend_to_list(list, &w);
+    assert(*(int *)(list->data) == 42);
+    assert(list->next != NULL);
 
     printf("List tests passed\n");
     return 0;

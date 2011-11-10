@@ -27,3 +27,14 @@ void append_to_list(List *list, void *data_ptr)
     new_node->data = NULL;
     new_node->next = NULL;
 }
+
+List * prepend_to_list(List *list, void *data_ptr)
+{
+    List *new_head = (List *) malloc(sizeof(List));
+    assert(new_head != NULL);
+
+    new_head->next = list;
+    new_head->data = data_ptr;
+
+    return new_head;
+}
