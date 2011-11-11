@@ -231,10 +231,14 @@ FunctionCall : IDENTIFIER '(' FunctionCallParameters ')' ';'
                  PRINT_LEVEL();
                  printf("Function call: %s\n", $1);
              }
+             | IDENTIFIER '(' ')' ';'
+             {
+                 PRINT_LEVEL();
+                 printf("Function call: %s\n", $1);
+             }
              ;
 FunctionCallParameters : FunctionCallParameters FunctionCallParameter
                        | FunctionCallParameter
-                       |
                        ;
 
 FunctionCallParameter : Expression
