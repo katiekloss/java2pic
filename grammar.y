@@ -135,7 +135,7 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 if(current_function != NULL) append_to_list(current_function->symbol_table, this);
 
                 PRINT_LEVEL();
-                printf("Declaration assignment: %s = expression\n", this->name);
+                printf("Declaration assignment: %s = %s\n", this->name, $4);
 
                 // emit declaration Operation and assignment Operation
             }
@@ -159,7 +159,7 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
             | IDENTIFIER '=' Expression ';'
             {
                 PRINT_LEVEL();
-                printf("Operation: %s = expression\n", $1);
+                printf("Operation: %s = %s\n", $1, $3);
                 // emit an operator operation 
             }
             | IDENTIFIER '=' CONSTANT ';'
@@ -171,9 +171,38 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
             ;
 
 Expression  : IDENTIFIER Operator IDENTIFIER
+            {
+                Variable *operand1 = search_table_chain(table_chain, (char *)$1);
+                assert(operand1 != NULL);
+                Variable *operand2 = search_table_chain(table_chain, (char *)$3);
+                assert(operand2 != NULL);
+                $$ = (char *)malloc(50);
+                assert($$ != NULL);
+                sprintf($$, "%s %c %s", operand1->name, $2, operand2->name);
+            }
             | IDENTIFIER Operator CONSTANT
+            {
+                Variable *operand = search_table_chain(table_chain, (char *)$1);
+                assert(operand != NULL);
+                $$ = (char *)malloc(50);
+                assert($$ != NULL);
+                sprintf($$, "%s %c %i", operand->name, $2, $3);
+            }
             | CONSTANT Operator IDENTIFIER
+            {
+                Variable *operand = search_table_chain(table_chain, (char *)$3);
+                assert(operand != NULL);
+                $$ = (char *)malloc(50);
+                assert($$ != NULL);
+                sprintf($$, "%i %c %s", $1, $2, operand->name);
+
+            }
             | CONSTANT Operator CONSTANT
+            {
+                $$ = (char *)malloc(50);
+                assert($$ != NULL);
+                sprintf($$, "%i %c %i", $1, $2, $3);
+            }
             ;
 
 Statements : Statements Statement
@@ -214,10 +243,10 @@ FunctionCallParameter : Expression
                       | String
                       ;
 
-Operator    : ADD
-            | SUBTRACT
-            | MULTIPLY
-            | DIVIDE
+Operator    : ADD { $$ = '+'; }
+            | SUBTRACT { $$ = '-'; }
+            | MULTIPLY { $$ = '*'; }
+            | DIVIDE { $$ = '/'; }
             ;
 
 TypeName    : INT { $$ = 'i'; }
@@ -244,6 +273,7 @@ Function  : TypeName IDENTIFIER '('
               assert(this_function->name != NULL);
               
               this_function->symbol_table = (List *) create_list();
+              this_function->statements = (List *) create_list();
 
               PRINT_LEVEL();
               printf("Function: %s\n", this_function->name);
