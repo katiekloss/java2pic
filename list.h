@@ -1,5 +1,10 @@
-typedef struct list_t
+#ifndef _LIST_H
+#define _LIST_H
+
+typedef struct list
 {
     void *data;
-    struct list_t *next;
+    struct list *next;
 } List;
+
+#endif

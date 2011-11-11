@@ -3,9 +3,10 @@
 
 #include <stdio.h>
 #include "y.tab.h"
+#include "objects.h"
 
 extern FILE *yyin;
-extern int yyparse(void);
+extern int yyparse(ImdtCode *program);
 
 int yydebug = 1;
 #endif

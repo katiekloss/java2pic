@@ -1,5 +1,6 @@
 %{
 #include "y.tab.h"
+#include <string.h>
 %}
 
 %option noyywrap
@@ -23,14 +24,14 @@ Identifier  {Letter}({Letter}|{Digit})*
 "-"         { return SUBTRACT; }
 "*"         { return MULTIPLY; }
 "/"         { return DIVIDE; }
+"public"    {}
+"static"    {}
 "class"     { return CLASS; }
 "int"       { return INT; }
 "void"      { return VOID; }
-"public"    { return PUBLIC; }
-"static"    { return STATIC; }
 "String[]"  { return STRINGARRAY; }
 {StringLiteral} { return STRING; }
-{Identifier}    { yylval = (char *)malloc(strlen(yytext)); strcpy(yylval, yytext); return IDENTIFIER; }
+{Identifier}    { yylval = strdup((char *)yytext); return IDENTIFIER; }
 {Number}    { yylval = atoi(yytext); return CONSTANT; }
 {Comment}       {}
 {Whitespace}    {}
