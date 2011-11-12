@@ -45,3 +45,29 @@ List * pop_from_list(List *list)
     free(list);
     return new_head;
 }
+
+int list_length(List *list)
+{
+    int length = 0;
+    while(list->data != NULL)
+    {
+        length++;
+        list = list->next;
+    }
+    return length;
+}
+
+int list_index(List *list, void *ptr)
+{
+    List *list_node = list;
+    while(list_node->data != NULL)
+    {
+        if(list_node->data == ptr)
+        {
+            return list_node - list;
+        }
+        list_node = list_node->next;
+    }
+
+    return -1;
+}

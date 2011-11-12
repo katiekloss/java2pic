@@ -39,6 +39,10 @@ int main()
     list = (List *) pop_from_list(list);
     assert(*(int *)(list->data) == 1);
 
+    assert(list_length(list) == 3);
+    assert(list_index(list, &y) == 1);
+    assert(list_index(list, &w) == -1);
+    
     printf("List tests passed\n");
     return 0;
 }
