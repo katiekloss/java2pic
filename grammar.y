@@ -12,6 +12,9 @@
 
 #define PRINT_LEVEL()   for(int i = 0; i < level; i++) printf("\t");
 
+int yylex(void);
+int yyerror(ImdtCode *, char *);
+
 /* This stores all of the symbol tables we use.
  *
  * When we enter a new function, we create a new table chain,
@@ -91,7 +94,7 @@ Declaration : Declaration ';'
                 this->name = strdup((char *)$3);
                 assert(this->name != NULL);
                 this->type = $1;
-                this->value = NULL;
+                this->value = 0;
                 append_to_list(table_chain->data, this);
 
                 if(current_function != NULL) append_to_list(current_function->symbol_table, this);
@@ -107,7 +110,7 @@ Declaration : Declaration ';'
                 this->name = strdup((char *)$2);
                 assert(this->name != NULL);
                 this->type = $1;
-                this->value = NULL;
+                this->value = 0;
                 append_to_list(table_chain->data, this);
                 
                 if(current_function != NULL) append_to_list(current_function->symbol_table, this);
@@ -129,7 +132,7 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 this->name = strdup((char *)$2);
                 assert(this->name != NULL);
                 this->type = $1;
-                this->value = NULL;
+                this->value = 0;
                 append_to_list(table_chain->data, this);
                 
                 if(current_function != NULL) append_to_list(current_function->symbol_table, this);
@@ -415,8 +418,7 @@ FunctionParameters : FunctionParameters ',' Declaration
 %%
 
 
-int yyerror (s)
-     char *s;
+int yyerror (ImdtCode *program, char *s)
 {
     printf ("I'm a teapot!\n");
 }
