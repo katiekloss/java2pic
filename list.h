@@ -7,4 +7,8 @@ typedef struct list
     struct list *next;
 } List;
 
+List * create_list();
+void append_to_list(List *, void *);
+List * push_to_list(List *, void *);
+List * pop_from_list(List *);
 #endif

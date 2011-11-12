@@ -2,6 +2,8 @@
 #include "objects.h"
 #include "list.h"
 #include "symbol_table.h"
+#include "imdtcode.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,6 +27,8 @@
 List *table_chain;
 
 Function *current_function = NULL;
+List *function_call_list = NULL;
+
 int level = 0;
 %}
 
@@ -95,8 +99,6 @@ Declaration : Declaration ';'
                 PRINT_LEVEL();
                 printf("Variable: %s\n", this->name);
                 $$ = this->type;
-
-                // emit declaration
             }
             | TypeName IDENTIFIER
             {
@@ -113,8 +115,6 @@ Declaration : Declaration ';'
                 PRINT_LEVEL();
                 printf("Variable: %s\n", this->name);
                 $$ = this->type;
-
-                // emit declaration
             }
             ;
 
@@ -134,10 +134,17 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 
                 if(current_function != NULL) append_to_list(current_function->symbol_table, this);
 
+                QuadOperand *result = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(result != NULL);
+                result->type = Pointer;
+                result->addr = this;
+                ((Quad *)$4)->result = result;
+                
                 PRINT_LEVEL();
-                printf("Declaration assignment: %s = %s\n", this->name, $4);
+                printf("Declaration assignment: %s = ", this->name);
+                print_quad_instruction((Quad *)$4);
+                printf("\n");
 
-                // emit declaration Operation and assignment Operation
             }
             | TypeName IDENTIFIER '=' CONSTANT ';'
             {
@@ -153,20 +160,28 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
 
                 PRINT_LEVEL();
                 printf("Variable: %s = %i\n", this->name, this->value);
-
-                // emit a declaration operation and an assignment Operation
             }
             | IDENTIFIER '=' Expression ';'
             {
+                Variable *this = (Variable *) search_table_chain(table_chain, (char *)$1);
+                QuadOperand *result = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(result != NULL);
+                result->type = Pointer;
+                result->addr = this;
+                ((Quad *)$3)->result = result;
+
                 PRINT_LEVEL();
-                printf("Operation: %s = %s\n", $1, $3);
-                // emit an operator operation 
+                printf("Operation: %s = ", $1);
+                print_quad_instruction((Quad *)$3);
+                printf("\n");
             }
             | IDENTIFIER '=' CONSTANT ';'
             {
                 PRINT_LEVEL();
                 printf("Assignment: %s = %i\n", $1, $3);
-                // emit an assignment operation
+
+                Variable *this = search_table_chain(table_chain, (char *)$1);
+                
             }
             ;
 
@@ -174,34 +189,121 @@ Expression  : IDENTIFIER Operator IDENTIFIER
             {
                 Variable *operand1 = search_table_chain(table_chain, (char *)$1);
                 assert(operand1 != NULL);
+                
+                QuadOperand *qoperand1 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand1 != NULL);
+                qoperand1->type = Pointer;
+                qoperand1->addr = operand1;
+
                 Variable *operand2 = search_table_chain(table_chain, (char *)$3);
                 assert(operand2 != NULL);
-                $$ = (char *)malloc(50);
-                assert($$ != NULL);
-                sprintf($$, "%s %c %s", operand1->name, $2, operand2->name);
+                QuadOperand *qoperand2 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand2 != NULL);
+                qoperand2->type = Pointer;
+                qoperand2->addr = operand2;
+
+                Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                assert(instruction != NULL);
+
+                instruction->operator = $2;
+                instruction->operand1 = qoperand1;
+                instruction->operand2 = qoperand2;
+                instruction->result = NULL; // Filled by the Expression's parent
+                
+                if(function_call_list == NULL)
+                    append_to_list(current_function->statements, instruction);
+                else
+                    append_to_list(function_call_list, instruction);
+                $$ = instruction;
             }
             | IDENTIFIER Operator CONSTANT
             {
                 Variable *operand = search_table_chain(table_chain, (char *)$1);
                 assert(operand != NULL);
-                $$ = (char *)malloc(50);
-                assert($$ != NULL);
-                sprintf($$, "%s %c %i", operand->name, $2, $3);
+
+                QuadOperand *qoperand1 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand1 != NULL);
+                qoperand1->type = Pointer;
+                qoperand1->addr = operand;
+                
+                QuadOperand *qoperand2 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand2 != NULL);
+                qoperand2->type = Constant;
+                qoperand2->value = $3;
+
+                Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                assert(instruction != NULL);
+
+                instruction->operator = $2;
+                instruction->operand1 = qoperand1;
+                instruction->operand2 = qoperand2;
+                instruction->result = NULL;
+
+                if(function_call_list == NULL)
+                    append_to_list(current_function->statements, instruction);
+                else
+                {
+                    append_to_list(function_call_list, instruction);
+                }
+
+                $$ = instruction;
             }
             | CONSTANT Operator IDENTIFIER
             {
                 Variable *operand = search_table_chain(table_chain, (char *)$3);
                 assert(operand != NULL);
-                $$ = (char *)malloc(50);
-                assert($$ != NULL);
-                sprintf($$, "%i %c %s", $1, $2, operand->name);
 
+                QuadOperand *qoperand1 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand1 != NULL);
+                qoperand1->type = Constant;
+                qoperand1->value = $1;
+
+                QuadOperand *qoperand2 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand2 != NULL);
+                qoperand2->type = Pointer;
+                qoperand2->addr = operand;
+
+                Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                assert(instruction != NULL);
+                
+                instruction->operator = $2;
+                instruction->operand1 = qoperand1;
+                instruction->operand2 = qoperand2;
+                instruction->result = NULL;
+
+                if(function_call_list == NULL)
+                    append_to_list(current_function->statements, instruction);
+                else
+                    append_to_list(function_call_list, instruction);
+
+                $$ = instruction;
             }
             | CONSTANT Operator CONSTANT
             {
-                $$ = (char *)malloc(50);
-                assert($$ != NULL);
-                sprintf($$, "%i %c %i", $1, $2, $3);
+                QuadOperand *qoperand1 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand1 != NULL);
+                qoperand1->type = Constant;
+                qoperand1->value = $1;
+
+                QuadOperand *qoperand2 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(qoperand2 != NULL);
+                qoperand2->type = Constant;
+                qoperand2->value = $3;
+
+                Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                assert(instruction != NULL);
+
+                instruction->operator = $2;
+                instruction->operand1 = qoperand1;
+                instruction->operand2 = qoperand2;
+                instruction->result = NULL;
+
+                if(function_call_list == NULL)
+                    append_to_list(current_function->statements, instruction);
+                else
+                    append_to_list(function_call_list, instruction);
+
+                $$ = instruction;
             }
             ;
 
@@ -226,8 +328,14 @@ Statement   : Declaration
             | FunctionCall
             ;
 
-FunctionCall : IDENTIFIER '(' FunctionCallParameters ')' ';'
+FunctionCall : IDENTIFIER '('
              {
+                 function_call_list = malloc(sizeof(List *));
+                 assert(function_call_list != NULL);
+             }
+             FunctionCallParameters ')' ';'
+             {
+                 function_call_list = NULL;
                  PRINT_LEVEL();
                  printf("Function call: %s\n", $1);
              }
@@ -242,6 +350,9 @@ FunctionCallParameters : FunctionCallParameters FunctionCallParameter
                        ;
 
 FunctionCallParameter : Expression
+                      {
+                          // Create temporary variable for expression
+                      }
                       | IDENTIFIER
                       | CONSTANT
                       | String
@@ -291,7 +402,7 @@ Function  : TypeName IDENTIFIER '('
           }
           FunctionParameters ')' '{' Statements '}'
           {
-              table_chain = pop_from_list(table_chain);
+              table_chain = (List *) pop_from_list(table_chain);
               level--;
           }
           ;

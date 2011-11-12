@@ -4,6 +4,11 @@
 #include "list.h"
 #include <stdint.h>
 
+typedef enum {
+    Constant,
+    Pointer
+} OperandType;
+
 typedef struct {
     char *name;
     char type;
@@ -18,10 +23,17 @@ typedef struct {
 } Function;
 
 typedef struct {
+    OperandType type;
+    uint8_t value;
+    void *addr;
+} QuadOperand;
+
+typedef struct {
     char operator;
-    void *operand1;
-    void *operand2;
-} Operation;
+    QuadOperand *operand1;
+    QuadOperand *operand2;
+    QuadOperand *result;
+} Quad;
 
 typedef struct {
     List *globals;
