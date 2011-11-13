@@ -200,7 +200,32 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 printf("Assignment: %s = %i\n", $1, $3);
 
                 Variable *this = search_table_chain(table_chain, (char *)$1);
-                // TODO: Emit Quad: IDENTIFIER = 0 + CONSTANT
+                assert(this != NULL);
+                
+                QuadOperand *operand1 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(operand1 != NULL);
+                operand1->type = Constant;
+                operand1->value = 0;
+
+                QuadOperand *operand2 = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(operand2 != NULL);
+                operand2->type = Constant;
+                operand2->value = $3;
+
+                QuadOperand *result = (QuadOperand *) malloc(sizeof(QuadOperand));
+                assert(result != NULL);
+                result->type = Pointer;
+                result->addr = this;
+
+                Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                assert(instruction != NULL);
+
+                instruction->operator = '+';
+                instruction->operand1 = operand1;
+                instruction->operand2 = operand2;
+                instruction->result = result;
+
+                append_to_list(current_function->statements, instruction);
             }
             ;
 
