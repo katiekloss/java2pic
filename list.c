@@ -59,14 +59,15 @@ int list_length(List *list)
 
 int list_index(List *list, void *ptr)
 {
-    List *list_node = list;
-    while(list_node->data != NULL)
+    int i = 0;
+    while(list->data != NULL)
     {
-        if(list_node->data == ptr)
+        if(list->data == ptr)
         {
-            return list_node - list;
+            return i;
         }
-        list_node = list_node->next;
+        i++;
+        list = list->next;
     }
 
     return -1;
