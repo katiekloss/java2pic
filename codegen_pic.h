@@ -7,3 +7,4 @@ void write_globals();
 void write_functions();
 void write_preamble();
 void allocate_variables(List *);
+void write_quad(Quad *, Function *);

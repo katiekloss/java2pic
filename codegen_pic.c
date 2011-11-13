@@ -1,6 +1,7 @@
 #include "objects.h"
 #include "codegen_pic.h"
 #include "list.h"
+#include "imdtcode.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -26,9 +27,14 @@ void codegen_pic(FILE *file, ImdtCode *program)
 void write_preamble()
 {
     // TODO: All of that "initializing ports" crap will go here
+    fprintf(output, "\t#include <p16f884.inc>\n");
+    fprintf(output, "\torg 0\n\n");
     fprintf(output, "; Initializing stack frame pointer\n");
-    fprintf(output, "\tmovlw 0x4f\n");
-    fprintf(output, "\tmovwf 0x0c\n\n");
+    fprintf(output, "\tmovlw H'4f'\n");
+    fprintf(output, "\tmovwf H'0c'\n\n");
+    fprintf(output, "main_loop:\n");
+    fprintf(output, "\tcall main\n");
+    fprintf(output, "\tgoto main_loop\n");
 }
 
 void write_globals()
@@ -39,7 +45,7 @@ void write_globals()
 
     fprintf(output, ";Declaring global variables\n");
     fprintf(output, "\tmovlw %i\n", globals_width);
-    fprintf(output, "\tsubwf 0x0c\n\n"); // Move frame pointer to make room for globals
+    fprintf(output, "\tsubwf H'0c'\n\n"); // Move frame pointer to make room for globals
     
     allocate_variables(bytecode->globals);
 }
@@ -56,27 +62,35 @@ void write_functions()
         int frame_width = list_length(function->symbol_table) + 1;
         printf("Need to allocate %i byte stack frame for function %s\n", frame_width, function->name);
         fprintf(output, "; Saving frame pointer\n");
-        fprintf(output, "\tmovf 0x0c, 0\n"); // Load top of stack - 1 into FSR
+        fprintf(output, "\tmovf H'0c', 0\n"); // Load top of stack - 1 into FSR
         fprintf(output, "\taddlw -1\n");
-        fprintf(output, "\tmovwf 0x04\n");
-        fprintf(output, "\tmovf 0x0c, 0\n"); // Store the current frame pointer into the top of the stack
-        fprintf(output, "\tmovwf 0x00\n");
+        fprintf(output, "\tmovwf H'04'\n");
+        fprintf(output, "\tmovf H'0c', 0\n"); // Store the current frame pointer into the top of the stack
+        fprintf(output, "\tmovwf H'00'\n");
         fprintf(output, "\tmovlw %i\n", frame_width); // Now set the new frame pointer
-        fprintf(output, "\tsubwf 0x0c\n\n");
+        fprintf(output, "\tsubwf H'0c'\n\n");
 
         allocate_variables(function->symbol_table);
 
-        fprintf(output, "; Function body goes here\n\n");
+        List *quads = function->statements;
+        while(quads->data != NULL)
+        {
+            Quad *quad = quads->data;
+            write_quad(quad, function);
+            quads = quads->next;
+        }
 
         // Restore previous frame pointer and return
         fprintf(output, "; Restoring previous frame pointer\n");
-        fprintf(output, "\tmovf 0x0c, 0\n");
+        fprintf(output, "\tmovf H'0c', 0\n");
         fprintf(output, "\taddlw %i\n", frame_width);
-        fprintf(output, "\tmovf 0x00, 0\n");
-        fprintf(output, "\tmovwf 0x0c\n");
-        fprintf(output, "\treturn\n");
+        fprintf(output, "\tmovf H'00', 0\n");
+        fprintf(output, "\tmovwf H'0c'\n");
+        fprintf(output, "\treturn\n\n");
+        
         functions = functions->next;
     }
+    fprintf(output, "\tend\n");
 }
 
 void allocate_variables(List *symbol_table)
@@ -86,13 +100,106 @@ void allocate_variables(List *symbol_table)
     {
         Variable *variable = symbol_table->data;
         fprintf(output, "; Allocating variable '%s'\n", variable->name);
-        fprintf(output, "\tmovf 0x0c, 0\n"); // Load next stack position
+        fprintf(output, "\tmovf H'0c', 0\n"); // Load next stack position
         fprintf(output, "\taddlw %i\n", offset);
-        fprintf(output, "\tmovwf 0x04\n");
+        fprintf(output, "\tmovwf H'04'\n");
         fprintf(output, "\tmovlw %i\n", variable->value); // Store this variable there
-        fprintf(output, "\tmovwf 0x00\n\n");
+        fprintf(output, "\tmovwf H'00'\n\n");
 
         offset++;
         symbol_table = symbol_table->next;
+    }
+}
+
+void write_quad(Quad *quad, Function *func)
+{
+    QuadOperand *operand1 = quad->operand1;
+    QuadOperand *operand2 = quad->operand2;
+    QuadOperand *result = quad->result;
+    fprintf(output, "; '%c' operation\n", quad->operator);
+    switch(quad->operator)
+    {
+        case '+':
+        {
+            Variable *resvar = (Variable *) result->addr;
+            switch(operand1->type)
+            {
+                case Constant:
+                    fprintf(output, "\tmovlw %i\n", operand1->value);
+                    break;
+                case Pointer:
+                {
+                    Variable *var = (Variable *) operand1->addr;
+                    switch(var->global)
+                    {
+                        int offset;
+                        case 0:
+                            offset = list_index(func->symbol_table, var);
+                            fprintf(output, "\tmovf H'0c', 0\n");
+                            fprintf(output, "\taddlw %i\n", offset);
+                            break;
+                        case 1:
+                            offset = list_length(bytecode->globals) - list_index(bytecode->globals, var);
+                            fprintf(output, "\tmovf H'4f', 0\n");
+                            fprintf(output, "\taddlw -%i\n", offset);
+                            break;
+                    }
+                    fprintf(output, "\tmovwf H'04'\n");
+                    fprintf(output, "\tmovf H'00', 0\n");
+                    break;
+                }
+            }
+            switch(operand2->type)
+            {
+                case Constant:
+                    fprintf(output, "\taddlw %i\n", operand2->value);
+                    fprintf(output, "\tmovwf H'0d'\n");
+                    break;
+                case Pointer:
+                {
+                    fprintf(output, "\tmovwf H'0d'\n");
+                    Variable *var = (Variable *) operand2->addr;
+                    switch(var->global)
+                    {
+                        int offset;
+                        case 0:
+                            offset = list_index(func->symbol_table, var);
+                            fprintf(output, "\tmovf H'0c', 0\n");
+                            fprintf(output, "\taddlw %i\n", offset);
+                            break;
+                        case 1:
+                            offset = list_length(bytecode->globals) - list_index(bytecode->globals, var);
+                            fprintf(output, "\tmovf H'4f', 0\n");
+                            fprintf(output, "\taddlw -%i\n", offset);
+                            break;
+                    }
+                    fprintf(output, "\tmovwf H'04'\n");
+                    fprintf(output, "\tmovf H'00', 0\n");
+                    fprintf(output, "\taddwf H'0d'\n");
+                    break;
+                }
+            }
+            switch(resvar->global)
+            {
+                int offset;
+                case 0:
+                    offset = list_index(func->symbol_table, resvar);
+                    fprintf(output, "\tmovf H'0c', 0\n");
+                    fprintf(output, "\taddlw %i\n", offset);
+                    break;
+                case 1:
+                    offset = list_length(bytecode->globals) - list_index(bytecode->globals, resvar);
+                    fprintf(output, "\tmovf H'4f', 0\n");
+                    fprintf(output, "\taddlw -%i\n", offset);
+                    break;
+            }
+            fprintf(output, "\tmovwf H'04'\n");
+            fprintf(output, "\tmovf H'0d', 0\n");
+            fprintf(output, "\tmovwf H'00'\n\n");
+            break;
+        }
+
+        default:
+            fprintf(output, "\tINVALID OPERATOR %c\n", quad->operator);
     }
 }
