@@ -95,9 +95,13 @@ Declaration : Declaration ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = 0;
+                this->global = 0;
                 append_to_list(table_chain->data, this);
 
-                if(current_function != NULL) append_to_list(current_function->symbol_table, this);
+                if(current_function != NULL)
+                    append_to_list(current_function->symbol_table, this);
+                else
+                    this->global = 1;
                 
                 PRINT_LEVEL();
                 printf("Variable: %s\n", this->name);
@@ -111,9 +115,13 @@ Declaration : Declaration ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = 0;
+                this->global = 0;
                 append_to_list(table_chain->data, this);
                 
-                if(current_function != NULL) append_to_list(current_function->symbol_table, this);
+                if(current_function != NULL)
+                    append_to_list(current_function->symbol_table, this);
+                else
+                    this->global = 1;
 
                 PRINT_LEVEL();
                 printf("Variable: %s\n", this->name);
@@ -133,9 +141,13 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = 0;
+                this->global = 0;
                 append_to_list(table_chain->data, this);
                 
-                if(current_function != NULL) append_to_list(current_function->symbol_table, this);
+                if(current_function != NULL)
+                    append_to_list(current_function->symbol_table, this);
+                else
+                    this->global = 1;
 
                 QuadOperand *result = (QuadOperand *) malloc(sizeof(QuadOperand));
                 assert(result != NULL);
@@ -157,9 +169,13 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = $4;
+                this->global = 0;
                 append_to_list(table_chain->data, this);
                 
-                if(current_function != NULL) append_to_list(current_function->symbol_table, this);
+                if(current_function != NULL)
+                    append_to_list(current_function->symbol_table, this);
+                else
+                    this->global = 1;
 
                 PRINT_LEVEL();
                 printf("Variable: %s = %i\n", this->name, this->value);
@@ -184,7 +200,7 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 printf("Assignment: %s = %i\n", $1, $3);
 
                 Variable *this = search_table_chain(table_chain, (char *)$1);
-                
+                // TODO: Emit Quad: IDENTIFIER = 0 + CONSTANT
             }
             ;
 
