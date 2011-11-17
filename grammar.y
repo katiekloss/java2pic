@@ -91,6 +91,7 @@ Declaration : Declaration ';'
             {
                 Variable *this = (Variable *) malloc(sizeof(Variable));
                 assert(this != NULL);
+                memset(this, 0, sizeof(Variable));
                 this->name = strdup((char *)$3);
                 assert(this->name != NULL);
                 this->type = $1;
@@ -111,6 +112,7 @@ Declaration : Declaration ';'
             {
                 Variable *this = (Variable *) malloc(sizeof(Variable));
                 assert(this != NULL);
+                memset(this, 0, sizeof(Variable));
                 this->name = strdup((char *)$2);
                 assert(this->name != NULL);
                 this->type = $1;
@@ -137,6 +139,7 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
             {
                 Variable *this = (Variable *) malloc(sizeof(Variable));
                 assert(this != NULL);
+                memset(this, 0, sizeof(Variable));
                 this->name = strdup((char *)$2);
                 assert(this->name != NULL);
                 this->type = $1;
@@ -165,6 +168,7 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
             {
                 Variable *this = (Variable *) malloc(sizeof(Variable));
                 assert(this != NULL);
+                memset(this, 0, sizeof(Variable));
                 this->name = strdup((char *)$2);
                 assert(this->name != NULL);
                 this->type = $1;
@@ -254,10 +258,10 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL; // Filled by the Expression's parent
                 
-                if(function_call_list == NULL)
-                    append_to_list(current_function->statements, instruction);
-                else
+                if(function_call_list != NULL)
                     append_to_list(function_call_list, instruction);
+
+                append_to_list(current_function->statements, instruction);
                 $$ = instruction;
             }
             | IDENTIFIER Operator CONSTANT
@@ -283,13 +287,10 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL;
 
-                if(function_call_list == NULL)
-                    append_to_list(current_function->statements, instruction);
-                else
-                {
+                if(function_call_list != NULL)
                     append_to_list(function_call_list, instruction);
-                }
-
+    
+                append_to_list(current_function->statements, instruction);
                 $$ = instruction;
             }
             | CONSTANT Operator IDENTIFIER
@@ -315,11 +316,10 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL;
 
-                if(function_call_list == NULL)
-                    append_to_list(current_function->statements, instruction);
-                else
+                if(function_call_list != NULL)
                     append_to_list(function_call_list, instruction);
-
+    
+                append_to_list(current_function->statements, instruction);
                 $$ = instruction;
             }
             | CONSTANT Operator CONSTANT
@@ -342,12 +342,15 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL;
 
-                if(function_call_list == NULL)
-                    append_to_list(current_function->statements, instruction);
-                else
+                if(function_call_list != NULL)
                     append_to_list(function_call_list, instruction);
-
+                
+                append_to_list(current_function->statements, instruction);
                 $$ = instruction;
+            }
+            | '(' Expression ')'
+            {
+                $$ = $2;
             }
             ;
 
@@ -389,13 +392,25 @@ FunctionCall : IDENTIFIER '('
                  printf("Function call: %s\n", $1);
              }
              ;
-FunctionCallParameters : FunctionCallParameters FunctionCallParameter
+FunctionCallParameters : FunctionCallParameters ',' FunctionCallParameter
                        | FunctionCallParameter
                        ;
 
 FunctionCallParameter : Expression
                       {
-                          // Create temporary variable for expression
+                          // This gets optimized out in the code generator to use a
+                          // temporary register instead of a stack variable
+                          Variable *temp = (Variable *) malloc(sizeof(Variable));
+                          assert(temp != NULL);
+                          memset(temp, 0, sizeof(Variable));
+                          temp->name = strdup("temp");
+                          temp->temporary = 1;
+
+                          QuadOperand *operand = (QuadOperand *) malloc(sizeof(QuadOperand));
+                          assert(operand != NULL);
+                          operand->type = Pointer;
+                          operand->addr = temp;
+                          ((Quad*)$$)->result = operand;
                       }
                       | IDENTIFIER
                       | CONSTANT
@@ -461,5 +476,5 @@ FunctionParameters : FunctionParameters ',' Declaration
 
 int yyerror (ImdtCode *program, char *s)
 {
-    printf ("I'm a teapot!\n");
+    printf("I'm a teapot!\n");
 }

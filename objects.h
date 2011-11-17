@@ -13,7 +13,8 @@ typedef struct {
     char *name;
     char type;
     uint8_t value;
-    char global;
+    uint8_t global;
+    uint8_t temporary;
 } Variable;
 
 typedef struct {
