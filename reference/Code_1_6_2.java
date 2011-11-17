@@ -4,36 +4,41 @@
 *
 * DESC:		EECS 337 Homework Assignment 1
 *
-* AUTHOR:	ajk108
+* AUTHOR:	dxo4
 *
-* DATE:		September 6, 2011
+* DATE:		August 30, 2011
 *
 * EDIT HISTORY:	
 *
 *******************************************************************************/
 
-public class Code_1_6_2 {
-	public static void main(String[] args)
+public class Code_1_6_2 {   
+/*
+ * main program
+ */
+  public static void main(String[] args) {   
+/*
+ *	enter the sample code from 1.6.2
+ */
+	int	w, x, y, z;
+	int i = 3; int j = 4;
 	{
-		int w, x, y, z;
-		int i = 3;
-		int j = 4;
-
-		{
-			int i2 = 5;
-			w = i2 + j;
-		}
-
-		x = i + j;
-
-		{
-			int j2 = 6;
-			i = 7;
-			y = i + j2;
-		}
-
-		z = i + j;
-
-		System.out.println("w:" + w + ",\tx:" + x + ",\ty:" + y + ",\tz:" + z);
+		int i2 = 5;
+		w = i2 + j;
 	}
+	x = i + j;
+	{
+		int j2 = 6;
+		i = 7;
+		y = i + j2;
+	}
+	z = i + j;
+/*
+ *	print the results
+ */
+	System.out.printf( "w:%d,\tx:%d,\ty:%d,\tz:%d\n", w, x, y, z);
+/*
+ *	no return value for Java
+ */
+ }
 }
