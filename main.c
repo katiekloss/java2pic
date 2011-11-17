@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "objects.h"
 #include "imdtcode.h"
+#include "optimizer.h"
 #include "codegen_pic.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -57,6 +58,8 @@ int main(int argc, char *argv[])
     }
 
     dump_imdt_code(bytecode);
+
+    optimizer(bytecode, optimize_level);
 
     FILE *output;
     if(output = fopen(outputname, "w"))
