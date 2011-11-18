@@ -7,6 +7,25 @@
 #include <assert.h>
 #include <string.h>
 
+/* The code generator lays out the memory like this:
+ * 
+ * 0x0c: Stack pointer (points to topmost allocated byte on stack)
+ * 0x0d: Temporary register
+ * 0x0e: Last byte of stack
+ * ... : Stack
+ * 0x4e: Example global variable
+ * 0x4f: First byte of stack
+ *
+ * A stack frame looks like this (inspired by x86 stack frame layout):
+ *
+ * 0x3a: Stack variable at offset 0 (stack pointer = 0x3a)
+ * 0x3b: Stack variable at offset 1
+ * 0x3c: Stack variable at offset 2
+ * 0x3d: Saved stack pointer (this is moved into 0x0c at function return)
+ * 0x3e: Start of previous stack frame
+ */
+
+
 FILE *output;
 ImdtCode *bytecode;
 int label_base = 0;
@@ -38,9 +57,6 @@ void write_preamble()
     fprintf(output, "; Initializing stack frame pointer\n");
     fprintf(output, "\tmovlw H'4f'\n");
     fprintf(output, "\tmovwf H'0c'\n\n");
-    fprintf(output, "main_loop:\n");
-    fprintf(output, "\tcall func_main\n");
-    fprintf(output, "\tgoto main_loop\n");
 }
 
 void write_globals()
@@ -58,6 +74,10 @@ void write_globals()
 
 void write_functions()
 {
+    fprintf(output, "main_loop:\n");
+    fprintf(output, "\tcall func_main\n");
+    fprintf(output, "\tgoto main_loop\n");
+
     List *functions = (List *) bytecode->functions;
     while(functions->data != NULL)
     {
@@ -65,8 +85,10 @@ void write_functions()
         // Write function label
         fprintf(output, "func_%s:\n", function->name);
 
+        // A stack frame needs 1 byte per static variable + 1 byte for saved frame pointer
         int frame_width = list_length(function->symbol_table) + 1;
         printf("Need to allocate %i byte stack frame for function %s\n", frame_width, function->name);
+
         fprintf(output, "; Saving frame pointer\n");
         fprintf(output, "\tmovf H'0c', 0\n"); // Load top of stack - 1 into FSR
         fprintf(output, "\taddlw -1\n");
@@ -88,8 +110,9 @@ void write_functions()
 
         // Restore previous frame pointer and return
         fprintf(output, "; Restoring previous frame pointer\n");
-        fprintf(output, "\tmovf H'0c', 0\n");
-        fprintf(output, "\taddlw %i\n", frame_width);
+        fprintf(output, "\tmovf H'0c', 0\n"); // Load previous frame pointer
+        fprintf(output, "\taddlw %i\n", frame_width - 1);
+        fprintf(output, "\tmovwf H'04'\n");
         fprintf(output, "\tmovf H'00', 0\n");
         fprintf(output, "\tmovwf H'0c'\n");
         fprintf(output, "\treturn\n\n");
@@ -144,16 +167,14 @@ void write_quad(Quad *quad, Function *func)
                             offset = list_index(func->symbol_table, var);
                             fprintf(output, "\tmovf H'0c', 0\n");
                             fprintf(output, "\taddlw %i\n", offset);
+                            fprintf(output, "\tmovwf H'04'\n");
+                            fprintf(output, "\tmovf H'00', 0\n");
                             break;
                         case Global:
                             offset = list_length(bytecode->globals) - list_index(bytecode->globals, var);
-                            fprintf(output, "\tmovf H'4f', 0\n");
-                            fprintf(output, "\taddlw -%i\n", offset);
+                            fprintf(output, "\tmovf H'%x', 0\n", 0x4f - offset);
                             break;
                     }
-                    fprintf(output, "\tmovwf H'04'\n");
-                    fprintf(output, "\tmovf H'00', 0\n");
-                    break;
                 }
             }
             switch(operand2->type)
@@ -173,15 +194,14 @@ void write_quad(Quad *quad, Function *func)
                             offset = list_index(func->symbol_table, var);
                             fprintf(output, "\tmovf H'0c', 0\n");
                             fprintf(output, "\taddlw %i\n", offset);
+                            fprintf(output, "\tmovwf H'04'\n");
+                            fprintf(output, "\tmovf H'00', 0\n");
                             break;
                         case Global:
                             offset = list_length(bytecode->globals) - list_index(bytecode->globals, var);
-                            fprintf(output, "\tmovf H'4f', 0\n");
-                            fprintf(output, "\taddlw -%i\n", offset);
+                            fprintf(output, "\tmovf H'%x', 0\n", 0x4f - offset);
                             break;
                     }
-                    fprintf(output, "\tmovwf H'04'\n");
-                    fprintf(output, "\tmovf H'00', 0\n");
                     fprintf(output, "\taddwf H'0d'\n");
                     break;
                 }
@@ -193,11 +213,16 @@ void write_quad(Quad *quad, Function *func)
                     offset = list_index(func->symbol_table, resvar);
                     fprintf(output, "\tmovf H'0c', 0\n");
                     fprintf(output, "\taddlw %i\n", offset);
+                    fprintf(output, "\tmovwf H'04'\n");
+                    fprintf(output, "\tmovf H'0d', 0\n");
+                    fprintf(output, "\tmovwf H'00'\n");
                     break;
                 case Global:
                     offset = list_length(bytecode->globals) - list_index(bytecode->globals, resvar);
-                    fprintf(output, "\tmovf H'4f', 0\n");
-                    fprintf(output, "\taddlw -%i\n", offset);
+                    fprintf(output, "\tmovlw H'%x'\n", 0x4f - offset);
+                    fprintf(output, "\tmovwf H'04'\n");
+                    fprintf(output, "\tmovf H'0d', 0\n");
+                    fprintf(output, "\tmovwf H'00'\n");
                     break;
                 case Temporary:
                     break;
@@ -236,8 +261,7 @@ void write_quad(Quad *quad, Function *func)
                                     break;
                                 case Global:
                                     offset = list_length(bytecode->globals) - list_index(bytecode->globals, character);
-                                    fprintf(output, "\tmovf H'4f', 0\n");
-                                    fprintf(output, "\taddlw -%i\n", offset);
+                                    fprintf(output, "\tmovf H'%x', 0\n", 0x4f - offset);
                             }
                             fprintf(output, "\tmovwf H'04'\n");
                             fprintf(output, "\tmovf H'00, 0\n");
