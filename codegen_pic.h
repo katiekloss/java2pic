@@ -8,3 +8,4 @@ void write_functions();
 void write_preamble();
 void allocate_variables(List *);
 void write_quad(Quad *, Function *);
+char * gen_label();

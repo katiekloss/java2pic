@@ -5,9 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 FILE *output;
 ImdtCode *bytecode;
+int label_base = 0;
 
 void codegen_pic(FILE *file, ImdtCode *program)
 {
@@ -29,6 +31,9 @@ void write_preamble()
     // TODO: All of that "initializing ports" crap will go here
     fprintf(output, "\t#include <p16f884.inc>\n");
     fprintf(output, "\torg 0\n\n");
+    fprintf(output, "\tbsf STATUS, RP0\n");
+    fprintf(output, "\tclrf TRISB\n");
+    fprintf(output, "\tbcf STATUS, RP0\n");
     fprintf(output, "; Initializing stack frame pointer\n");
     fprintf(output, "\tmovlw H'4f'\n");
     fprintf(output, "\tmovwf H'0c'\n\n");
@@ -90,6 +95,7 @@ void write_functions()
         
         functions = functions->next;
     }
+
     fprintf(output, "\tend\n");
 }
 
@@ -199,7 +205,63 @@ void write_quad(Quad *quad, Function *func)
             break;
         }
 
+        case 'c':
+            if(!strncmp(quad->operand1->name, "printf", 5))
+            {
+                List *characters = (List *) quad->operand2->addr; 
+                while(characters->data != NULL)
+                {
+                    Variable *character = (Variable *) characters->data;
+                    switch(character->type)
+                    {
+                        case 'c':
+                            fprintf(output, "\tmovlw D'%i'\n", (uint8_t)character->value);
+                            fprintf(output, "\tmovwf H'06'\n");
+                            break;
+                        case 'i':
+                            if(character->temporary)
+                            {
+                                // find the temporary register... 
+                                break;
+                            }
+
+                            int offset;
+                            switch(character->global)
+                            {
+                                case 0:
+                                    offset = list_index(func->symbol_table, character);
+                                    fprintf(output, "\tmovf H'0c', 0\n");
+                                    fprintf(output, "\taddlw %i\n", offset);
+                                    break;
+                                case 1:
+                                    offset = list_length(bytecode->globals) - list_index(bytecode->globals, character);
+                                    fprintf(output, "\tmovf H'4f', 0\n");
+                                    fprintf(output, "\taddlw -%i\n", offset);
+                            }
+                            fprintf(output, "\tmovwf H'04'\n");
+                            fprintf(output, "\tmovf H'00, 0\n");
+                            fprintf(output, "\tmovwf H'06'\n");
+                            break;
+                    }
+
+                    characters = characters->next;
+                }
+            } else {
+                fprintf(output, "\tcall %s\n", quad->operand1->name);
+            }
+
+            break;
+
         default:
             fprintf(output, "\tINVALID OPERATOR %c\n", quad->operator);
     }
+}
+
+char * gen_label()
+{
+    char *label = (char *) malloc(6);
+    assert(label != NULL);
+    sprintf(label, "lbl_%i", label_base);
+    label_base++;
+    return label;
 }

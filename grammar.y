@@ -544,12 +544,16 @@ List * build_printf_list(List *parameters)
             } else if(format[i] == 't') {
                 this->value = '\t';
             }
+
+            append_to_list(expanded, this);
             i++;
         } else {
             Variable *this = (Variable *) malloc(sizeof(Variable));
             assert(this != NULL);
             this->type = 'c';
             this->value = format[i];
+
+            append_to_list(expanded, this);
             i++;
         }
     }
