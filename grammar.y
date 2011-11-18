@@ -14,6 +14,7 @@
 
 int yylex(void);
 int yyerror(ImdtCode *, char *);
+List * build_printf_list(List *parameters);
 
 /* This stores all of the symbol tables we use.
  *
@@ -391,7 +392,10 @@ FunctionCall : IDENTIFIER '('
                  assert(name != NULL);
                  name->type = String;
                  if(!strncmp($1, "System.out.printf", 17))
+                 {
                      name->name = strdup("printf");
+                     call_list->addr = build_printf_list(function_call_list);
+                 }
                  else
                      name->name = strdup($1);
 
@@ -445,11 +449,18 @@ FunctionCallParameter : Expression
                           assert(operand != NULL);
                           operand->type = Pointer;
                           operand->addr = temp;
-                          ((Quad*)$$)->result = operand;
+                          ((Quad *)$1)->result = operand;
                       }
                       | IDENTIFIER
+                      {
+                          Variable *this = (Variable *) search_table_chain(table_chain, (char *)$1);
+                          append_to_list(function_call_list, this);
+                      }
                       | CONSTANT
-                      | String
+                      | STRING
+                      {
+                          append_to_list(function_call_list, $1);
+                      }
                       ;
 
 Operator    : ADD { $$ = '+'; }
@@ -461,11 +472,6 @@ Operator    : ADD { $$ = '+'; }
 TypeName    : INT { $$ = 'i'; }
             | VOID { $$ = 'v'; }
             | STRINGARRAY { $$ = 'a'; } /* TODO: Fix this! */
-            ;
-
-String      : String ADD STRING
-            | String ADD IDENTIFIER
-            | STRING
             ;
 
 Functions : Functions Function
@@ -512,4 +518,41 @@ FunctionParameters : FunctionParameters ',' Declaration
 int yyerror (ImdtCode *program, char *s)
 {
     printf("I'm a teapot!\n");
+}
+
+List * build_printf_list(List *parameters)
+{
+    char *format = (char *) parameters->data;
+    List *variables = parameters->next;
+    List *expanded = create_list();
+    for(int i = 0; i < strlen(format); )
+    {
+        if(format[i] == '%')
+        {
+            append_to_list(expanded, (Variable *)variables->data);
+            variables = variables->next;
+            i += 2;
+        } else if (format[i] == '\\') {
+            Variable *this = (Variable *) malloc(sizeof(Variable));
+            assert(this != NULL);
+            this->type = 'c';
+
+            i++;
+            if(format[i] == 'n')
+            {
+                this->value = '\n';
+            } else if(format[i] == 't') {
+                this->value = '\t';
+            }
+            i++;
+        } else {
+            Variable *this = (Variable *) malloc(sizeof(Variable));
+            assert(this != NULL);
+            this->type = 'c';
+            this->value = format[i];
+            i++;
+        }
+    }
+
+    return expanded;
 }
