@@ -379,13 +379,13 @@ FunctionCall : IDENTIFIER '('
                  QuadOperand *name = (QuadOperand *) malloc(sizeof(QuadOperand));
                  assert(name != NULL);
                  name->type = String;
-                 if(!strncmp($1, "System.out.printf", 17))
+                 if(!strncmp((char *)$1, "System.out.printf", 17))
                  {
-                     name->name = strdup("printf");
+                     name->name = (char *) strdup("printf");
                      call_list->addr = build_printf_list(function_call_list);
                  }
                  else
-                     name->name = strdup($1);
+                     name->name = strdup((char *)$1);
 
                  Quad *instruction = (Quad *) malloc(sizeof(Quad));
                  assert(instruction != NULL);
@@ -404,7 +404,7 @@ FunctionCall : IDENTIFIER '('
                  QuadOperand *name = (QuadOperand *) malloc(sizeof(QuadOperand));
                  assert(name != NULL);
                  name->type = String;
-                 name->name = strdup($1);
+                 name->name = strdup((char *)$1);
 
                  Quad *instruction = (Quad *) malloc(sizeof(Quad));
                  assert(instruction != NULL);
@@ -430,7 +430,7 @@ FunctionCallParameter : Expression
                           Variable *temp = (Variable *) malloc(sizeof(Variable));
                           assert(temp != NULL);
                           memset(temp, 0, sizeof(Variable));
-                          temp->name = strdup("temp");
+                          temp->name = (char *) strdup("temp");
                           temp->type = 'i';
                           temp->scope = Temporary;
 
@@ -450,7 +450,7 @@ FunctionCallParameter : Expression
                       | CONSTANT
                       | STRING
                       {
-                          append_to_list(function_call_list, $1);
+                          append_to_list(function_call_list, (char *)$1);
                       }
                       ;
 
