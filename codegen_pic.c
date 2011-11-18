@@ -10,6 +10,7 @@
 FILE *output;
 ImdtCode *bytecode;
 int label_base = 0;
+int temporary = 0x0d;
 
 void codegen_pic(FILE *file, ImdtCode *program)
 {
@@ -38,7 +39,7 @@ void write_preamble()
     fprintf(output, "\tmovlw H'4f'\n");
     fprintf(output, "\tmovwf H'0c'\n\n");
     fprintf(output, "main_loop:\n");
-    fprintf(output, "\tcall main\n");
+    fprintf(output, "\tcall func_main\n");
     fprintf(output, "\tgoto main_loop\n");
 }
 
@@ -62,7 +63,7 @@ void write_functions()
     {
         Function *function = functions->data;
         // Write function label
-        fprintf(output, "%s:\n", function->name);
+        fprintf(output, "func_%s:\n", function->name);
 
         int frame_width = list_length(function->symbol_table) + 1;
         printf("Need to allocate %i byte stack frame for function %s\n", frame_width, function->name);
@@ -136,15 +137,15 @@ void write_quad(Quad *quad, Function *func)
                 case Pointer:
                 {
                     Variable *var = (Variable *) operand1->addr;
-                    switch(var->global)
+                    switch(var->scope)
                     {
                         int offset;
-                        case 0:
+                        case Local:
                             offset = list_index(func->symbol_table, var);
                             fprintf(output, "\tmovf H'0c', 0\n");
                             fprintf(output, "\taddlw %i\n", offset);
                             break;
-                        case 1:
+                        case Global:
                             offset = list_length(bytecode->globals) - list_index(bytecode->globals, var);
                             fprintf(output, "\tmovf H'4f', 0\n");
                             fprintf(output, "\taddlw -%i\n", offset);
@@ -165,15 +166,15 @@ void write_quad(Quad *quad, Function *func)
                 {
                     fprintf(output, "\tmovwf H'0d'\n");
                     Variable *var = (Variable *) operand2->addr;
-                    switch(var->global)
+                    switch(var->scope)
                     {
                         int offset;
-                        case 0:
+                        case Local:
                             offset = list_index(func->symbol_table, var);
                             fprintf(output, "\tmovf H'0c', 0\n");
                             fprintf(output, "\taddlw %i\n", offset);
                             break;
-                        case 1:
+                        case Global:
                             offset = list_length(bytecode->globals) - list_index(bytecode->globals, var);
                             fprintf(output, "\tmovf H'4f', 0\n");
                             fprintf(output, "\taddlw -%i\n", offset);
@@ -185,23 +186,22 @@ void write_quad(Quad *quad, Function *func)
                     break;
                 }
             }
-            switch(resvar->global)
+            switch(resvar->scope)
             {
                 int offset;
-                case 0:
+                case Local:
                     offset = list_index(func->symbol_table, resvar);
                     fprintf(output, "\tmovf H'0c', 0\n");
                     fprintf(output, "\taddlw %i\n", offset);
                     break;
-                case 1:
+                case Global:
                     offset = list_length(bytecode->globals) - list_index(bytecode->globals, resvar);
                     fprintf(output, "\tmovf H'4f', 0\n");
                     fprintf(output, "\taddlw -%i\n", offset);
                     break;
+                case Temporary:
+                    break;
             }
-            fprintf(output, "\tmovwf H'04'\n");
-            fprintf(output, "\tmovf H'0d', 0\n");
-            fprintf(output, "\tmovwf H'00'\n\n");
             break;
         }
 
@@ -219,21 +219,22 @@ void write_quad(Quad *quad, Function *func)
                             fprintf(output, "\tmovwf H'06'\n");
                             break;
                         case 'i':
-                            if(character->temporary)
+                            if(character->scope = Temporary)
                             {
-                                // find the temporary register... 
+                                fprintf(output, "\tmovf H'0d', 0\n");
+                                fprintf(output, "\tmovwf H'06'\n");
                                 break;
                             }
 
                             int offset;
-                            switch(character->global)
+                            switch(character->scope)
                             {
-                                case 0:
+                                case Local:
                                     offset = list_index(func->symbol_table, character);
                                     fprintf(output, "\tmovf H'0c', 0\n");
                                     fprintf(output, "\taddlw %i\n", offset);
                                     break;
-                                case 1:
+                                case Global:
                                     offset = list_length(bytecode->globals) - list_index(bytecode->globals, character);
                                     fprintf(output, "\tmovf H'4f', 0\n");
                                     fprintf(output, "\taddlw -%i\n", offset);
@@ -247,7 +248,7 @@ void write_quad(Quad *quad, Function *func)
                     characters = characters->next;
                 }
             } else {
-                fprintf(output, "\tcall %s\n", quad->operand1->name);
+                fprintf(output, "\tcall func_%s\n", quad->operand1->name);
             }
 
             break;

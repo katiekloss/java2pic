@@ -97,13 +97,13 @@ Declaration : Declaration ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = 0;
-                this->global = 0;
+                this->scope = Local;
                 append_to_list(table_chain->data, this);
 
                 if(current_function != NULL)
                     append_to_list(current_function->symbol_table, this);
                 else
-                    this->global = 1;
+                    this->scope = Global;
                 
                 PRINT_LEVEL();
                 printf("Variable: %s\n", this->name);
@@ -118,13 +118,13 @@ Declaration : Declaration ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = 0;
-                this->global = 0;
+                this->scope = Local;
                 append_to_list(table_chain->data, this);
                 
                 if(current_function != NULL)
                     append_to_list(current_function->symbol_table, this);
                 else
-                    this->global = 1;
+                    this->scope = Global;
 
                 PRINT_LEVEL();
                 printf("Variable: %s\n", this->name);
@@ -145,13 +145,13 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = 0;
-                this->global = 0;
+                this->scope = Local;
                 append_to_list(table_chain->data, this);
                 
                 if(current_function != NULL)
                     append_to_list(current_function->symbol_table, this);
                 else
-                    this->global = 1;
+                    this->scope = Global;
 
                 QuadOperand *result = (QuadOperand *) malloc(sizeof(QuadOperand));
                 assert(result != NULL);
@@ -174,13 +174,13 @@ Assignment  : TypeName IDENTIFIER '=' Expression ';'
                 assert(this->name != NULL);
                 this->type = $1;
                 this->value = $4;
-                this->global = 0;
+                this->scope = Local;
                 append_to_list(table_chain->data, this);
                 
                 if(current_function != NULL)
                     append_to_list(current_function->symbol_table, this);
                 else
-                    this->global = 1;
+                    this->scope = Global;
 
                 PRINT_LEVEL();
                 printf("Variable: %s = %i\n", this->name, this->value);
@@ -259,9 +259,6 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL; // Filled by the Expression's parent
                 
-                if(function_call_list != NULL)
-                    append_to_list(function_call_list, instruction);
-
                 append_to_list(current_function->statements, instruction);
                 $$ = instruction;
             }
@@ -288,9 +285,6 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL;
 
-                if(function_call_list != NULL)
-                    append_to_list(function_call_list, instruction);
-    
                 append_to_list(current_function->statements, instruction);
                 $$ = instruction;
             }
@@ -317,9 +311,6 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL;
 
-                if(function_call_list != NULL)
-                    append_to_list(function_call_list, instruction);
-    
                 append_to_list(current_function->statements, instruction);
                 $$ = instruction;
             }
@@ -342,9 +333,6 @@ Expression  : IDENTIFIER Operator IDENTIFIER
                 instruction->operand1 = qoperand1;
                 instruction->operand2 = qoperand2;
                 instruction->result = NULL;
-
-                if(function_call_list != NULL)
-                    append_to_list(function_call_list, instruction);
                 
                 append_to_list(current_function->statements, instruction);
                 $$ = instruction;
@@ -443,7 +431,10 @@ FunctionCallParameter : Expression
                           assert(temp != NULL);
                           memset(temp, 0, sizeof(Variable));
                           temp->name = strdup("temp");
-                          temp->temporary = 1;
+                          temp->type = 'i';
+                          temp->scope = Temporary;
+
+                          append_to_list(function_call_list, temp);
 
                           QuadOperand *operand = (QuadOperand *) malloc(sizeof(QuadOperand));
                           assert(operand != NULL);

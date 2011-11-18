@@ -11,12 +11,17 @@ typedef enum {
     LinkedList
 } OperandType;
 
+typedef enum {
+    Local,
+    Global,
+    Temporary
+} Scope;
+
 typedef struct {
     char *name;
     char type;
     uint8_t value;
-    uint8_t global;
-    uint8_t temporary;
+    Scope scope;
 } Variable;
 
 typedef struct {
