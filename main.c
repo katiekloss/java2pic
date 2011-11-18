@@ -1,7 +1,6 @@
 #include "parser.h"
 #include "objects.h"
 #include "imdtcode.h"
-#include "optimizer.h"
 #include "codegen_pic.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -17,29 +16,11 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        for(int i = 1; i < argc; i++)
-        {
-            if(!strncmp(argv[i], "-O0", 3))
-            {
-                optimize_level = 0;
-            }
-            else if(!strncmp(argv[i], "-O1", 3))
-            {
-                optimize_level = 1;
-            }
-            else if(!strncmp(argv[i], "-O2", 3))
-            {
-                optimize_level = 2;
-            }
-            else
-            {
-                filename = strdup(argv[i]);
-            }
-        }
+        filename = strdup(argv[1]);
     }
     else
     {
-        printf("Usage: java2pic [-O<optimization level>] filename.java\n");
+        printf("Usage: java2pic filename.java\n");
         exit(0);
     }
 
@@ -58,8 +39,6 @@ int main(int argc, char *argv[])
     }
 
     dump_imdt_code(bytecode);
-
-    optimizer(bytecode, optimize_level);
 
     FILE *output;
     if(output = fopen(outputname, "w"))
