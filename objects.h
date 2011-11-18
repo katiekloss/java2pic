@@ -6,7 +6,9 @@
 
 typedef enum {
     Constant,
-    Pointer
+    Pointer,
+    String,
+    LinkedList
 } OperandType;
 
 typedef struct {
@@ -28,6 +30,7 @@ typedef struct {
     OperandType type;
     uint8_t value;
     void *addr;
+    char *name;
 } QuadOperand;
 
 typedef struct {

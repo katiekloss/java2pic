@@ -382,12 +382,47 @@ FunctionCall : IDENTIFIER '('
              }
              FunctionCallParameters ')' ';'
              {
+                 QuadOperand *call_list = (QuadOperand *) malloc(sizeof(QuadOperand));
+                 assert(call_list != NULL);
+                 call_list->type = LinkedList;
+                 call_list->addr = function_call_list;
+
+                 QuadOperand *name = (QuadOperand *) malloc(sizeof(QuadOperand));
+                 assert(name != NULL);
+                 name->type = String;
+                 if(!strncmp($1, "System.out.printf", 17))
+                     name->name = strdup("printf");
+                 else
+                     name->name = strdup($1);
+
+                 Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                 assert(instruction != NULL);
+                 instruction->operator = 'c';
+                 instruction->operand1 = name;
+                 instruction->operand2 = call_list;
+
+                 append_to_list(current_function->statements, instruction);
+                 
                  function_call_list = NULL;
                  PRINT_LEVEL();
                  printf("Function call: %s\n", $1);
              }
              | IDENTIFIER '(' ')' ';'
              {
+                 QuadOperand *name = (QuadOperand *) malloc(sizeof(QuadOperand));
+                 assert(name != NULL);
+                 name->type = String;
+                 name->name = strdup($1);
+
+                 Quad *instruction = (Quad *) malloc(sizeof(Quad));
+                 assert(instruction != NULL);
+                 instruction->operator = 'c';
+                 instruction->operand1 = name;
+                 instruction->operand2 = NULL;
+
+                 append_to_list(current_function->statements, instruction);
+
+                 function_call_list = NULL;
                  PRINT_LEVEL();
                  printf("Function call: %s\n", $1);
              }

@@ -60,23 +60,45 @@ void dump_imdt_code(ImdtCode *bytecode)
             printf("  %c    ", statement->operator);
             
             QuadOperand *operand1 = (QuadOperand *) statement->operand1;
-            switch(operand1->type)
+            if(operand1 != NULL)
             {
-                case Constant:
-                    printf("$%i\t\t", operand1->value);
-                    break;
-                case Pointer:
-                    printf("%s<0x%x>\t", ((Variable *)operand1->addr)->name, operand1->addr);
+                switch(operand1->type)
+                {
+                    case Constant:
+                        printf("$%i\t\t", operand1->value);
+                        break;
+                    case Pointer:
+                        printf("%s<0x%x>\t", ((Variable *)operand1->addr)->name, operand1->addr);
+                        break;
+                    case String:
+                        printf("%s\t\t", operand1->name);
+                        break;
+                    case LinkedList:
+                        printf("<0x%x>\t", operand1->addr);
+                }
+            } else {
+                printf("null\t\t");
             }
-            
+
             QuadOperand *operand2 = (QuadOperand *) statement->operand2;
-            switch(operand2->type)
+            if(operand2 != NULL)
             {
-                case Constant:
-                    printf("$%i\t\t", operand2->value);
-                    break;
-                case Pointer:
-                    printf("%s<0x%x>\t", ((Variable *)operand2->addr)->name, operand2->addr);
+                switch(operand2->type)
+                {
+                    case Constant:
+                        printf("$%i\t\t", operand2->value);
+                        break;
+                    case Pointer:
+                        printf("%s<0x%x>\t", ((Variable *)operand2->addr)->name, operand2->addr);
+                        break;
+                    case String:
+                        printf("%s\t", operand2->name);
+                        break;
+                    case LinkedList:
+                        printf("<0x%x>\t", operand2->addr);
+                }
+            } else {
+                printf("null\t\t");
             }
 
             QuadOperand *result = (QuadOperand *) statement->result;
