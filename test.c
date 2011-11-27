@@ -42,7 +42,14 @@ int main()
     assert(list_length(list) == 3);
     assert(list_index(list, &y) == 1);
     assert(list_index(list, &w) == -1);
-    
+   
+    list = remove_from_list(list, &x);
+    assert(*(int *)(list->data) == 2);
+
+    list = push_to_list(list, &x);
+    list = remove_from_list(list, &y);
+    assert(*(int *)(list->next->data) == 3);
+
     printf("List tests passed\n");
     return 0;
 }

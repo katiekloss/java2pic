@@ -72,3 +72,21 @@ int list_index(List *list, void *ptr)
 
     return -1;
 }
+
+List * remove_from_list(List *list, void *ptr)
+{
+    if(list->next == NULL) return list;
+    if(list->data == ptr) return list->next;
+    
+    List *copy = list;
+    while(copy->next != NULL)
+    {
+        if(copy->next->data == ptr)
+        {
+            copy->next = copy->next->next;
+        }
+        if(copy->next == NULL) break;
+        copy = copy->next;
+    }
+    return list;
+}

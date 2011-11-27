@@ -13,4 +13,5 @@ List * push_to_list(List *, void *);
 List * pop_from_list(List *);
 int list_length(List *);
 int list_index(List *, void *);
+List * remove_from_list(List *, void *);
 #endif
